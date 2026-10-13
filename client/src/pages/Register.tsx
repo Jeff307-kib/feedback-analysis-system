@@ -92,12 +92,25 @@ export default function Register() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium leading-none" htmlFor="companyName">Company Name (Optional)</label>
+              <label className="text-sm font-medium leading-none" htmlFor="companyName">Company Name</label>
               <Input
                 id="companyName"
                 type="text"
+                required
                 placeholder="Acme Electronics"
                 value={formData.companyName}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium leading-none" htmlFor="companyEmail">Company Email</label>
+              <Input
+                id="companyEmail"
+                type="email"
+                required
+                placeholder="info@acme.com"
+                value={formData.companyEmail}
                 onChange={handleChange}
               />
             </div>

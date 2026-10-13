@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { db } from '../database';
 import { users } from '../database/schema';
 import { eq } from 'drizzle-orm';
+import { checkInactivePlanExpirations } from './subscriptions.js';
 
 const router = Router();
 
@@ -13,8 +14,8 @@ router.post('/register', async (req, res) => {
   try {
     const { username, email, password, companyName, companyEmail } = req.body;
 
-    if (!username || !email || !password) {
-      return res.status(400).json({ error: 'Username, email, and password are required' });
+    if (!username || !email || !password || !companyName || !companyEmail) {
+      return res.status(400).json({ error: 'Username, email, password, company name, and company email are required' });
     }
 
     // Check if user already exists
@@ -67,6 +68,13 @@ router.post('/login', async (req, res) => {
     if (!isMatch) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
+
+    if (user.status !== 'active') {
+      return res.status(403).json({ error: 'Account is suspended or deleted' });
+    }
+
+    // Check and expire any inactive plan subscriptions past period end
+    await checkInactivePlanExpirations();
 
     // Create JWT
     const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });

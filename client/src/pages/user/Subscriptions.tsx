@@ -7,8 +7,12 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
 import { Crown, CheckCircle2, CreditCard, Receipt } from 'lucide-react';
+import { PaymentModal } from '../../components/PaymentModal';
 
 export default function Subscriptions() {
+  const [clientSecret, setClientSecret] = React.useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = React.useState(false);
+
   const queryClient = useQueryClient();
 
   const { data: mySub, isLoading: loadingSub } = useQuery({
@@ -21,27 +25,44 @@ export default function Subscriptions() {
     queryFn: plansApi.getAll,
   });
 
+  const { data: invoices = [], isLoading: loadingInvoices } = useQuery({
+    queryKey: ['invoices'],
+    queryFn: subscriptionsApi.getInvoices,
+  });
+
   const purchaseMutation = useMutation({
-    mutationFn: subscriptionsApi.purchase,
+    mutationFn: subscriptionsApi.create,
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['mySubscription'] });
-      toast.success(`Successfully subscribed to ${data.plan.name}!`);
+      setClientSecret(data.clientSecret);
+      setIsModalOpen(true);
     },
     onError: (error: any) => toast.error(error.message)
   });
 
-  if (loadingSub || loadingPlans) {
+  const cancelMutation = useMutation({
+    mutationFn: subscriptionsApi.cancel,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['mySubscription'] });
+      toast.success('Subscription canceled successfully.');
+    },
+    onError: (error: any) => toast.error(error.message)
+  });
+
+  if (loadingSub || loadingPlans || loadingInvoices) {
     return <div className="p-8 text-center text-slate-500">Loading subscriptions...</div>;
   }
 
   const { subscription, plan: currentPlan, hasUsedFreeTrial } = mySub || {};
   const isFreeTier = !subscription && !hasUsedFreeTrial;
 
-  // Mock billing history
-  const mockBillingHistory = [
-    { id: 'INV-001', date: '2023-10-01', amount: '$49.00', status: 'Paid', plan: 'Pro Plan' },
-    { id: 'INV-002', date: '2023-09-01', amount: '$49.00', status: 'Paid', plan: 'Pro Plan' },
-  ];
+  const handlePaymentSuccess = async () => {
+    setIsModalOpen(false);
+    toast.info('Syncing subscription status...');
+    await subscriptionsApi.sync();
+    queryClient.invalidateQueries({ queryKey: ['mySubscription'] });
+    queryClient.invalidateQueries({ queryKey: ['invoices'] });
+    toast.success('Subscription is now active!');
+  };
 
   return (
     <div className="space-y-8">
@@ -70,8 +91,17 @@ export default function Subscriptions() {
               )}
             </div>
             {subscription && (
-              <Button variant="secondary" className="bg-white text-slate-900 hover:bg-slate-100">
-                Cancel Subscription
+              <Button 
+                variant="secondary" 
+                className="bg-white text-slate-900 hover:bg-slate-100"
+                onClick={() => {
+                  if (confirm('Are you sure you want to cancel your subscription?')) {
+                    cancelMutation.mutate();
+                  }
+                }}
+                disabled={cancelMutation.isPending || subscription.status === 'CANCELED'}
+              >
+                {cancelMutation.isPending ? 'Canceling...' : 'Cancel Subscription'}
               </Button>
             )}
           </div>
@@ -151,29 +181,44 @@ export default function Subscriptions() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockBillingHistory.map((inv) => (
+              {invoices.map((inv: any) => (
                 <TableRow key={inv.id}>
-                  <TableCell className="font-medium text-slate-900">{inv.id}</TableCell>
-                  <TableCell className="text-slate-500">{inv.date}</TableCell>
-                  <TableCell className="text-slate-700">{inv.plan}</TableCell>
-                  <TableCell className="text-slate-900">{inv.amount}</TableCell>
+                  <TableCell className="font-medium text-slate-900">{inv.number}</TableCell>
+                  <TableCell className="text-slate-500">{new Date(inv.created * 1000).toLocaleDateString()}</TableCell>
+                  <TableCell className="text-slate-700">{inv.lines?.data[0]?.plan?.nickname || 'Subscription'}</TableCell>
+                  <TableCell className="text-slate-900">${(inv.amount_paid / 100).toFixed(2)}</TableCell>
                   <TableCell>
-                    <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
+                    <Badge variant="outline" className={inv.status === 'paid' ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-amber-50 text-amber-700 border-amber-200"}>
                       {inv.status}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="sm" className="text-blue-600" onClick={() => alert('Mock Download PDF')}>
-                      PDF
-                    </Button>
+                    {inv.hosted_invoice_url ? (
+                      <Button variant="ghost" size="sm" className="text-blue-600" onClick={() => window.open(inv.hosted_invoice_url, '_blank')}>
+                        PDF
+                      </Button>
+                    ) : (
+                      <span className="text-slate-400 text-sm">N/A</span>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
+              {invoices.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-slate-500 py-4">No billing history found.</TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </Card>
       </div>
 
+      <PaymentModal 
+        clientSecret={clientSecret} 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onSuccess={handlePaymentSuccess} 
+      />
     </div>
   );
 }

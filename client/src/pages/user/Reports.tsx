@@ -2,18 +2,15 @@ import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router';
 import { datasetsApi, reportsApi } from '../../services/api';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { 
   Download, 
   BarChart3, 
   PieChart as PieChartIcon, 
   TrendingUp, 
   Target, 
-  AlertCircle,
-  MessageSquareText
+  AlertCircle
 } from 'lucide-react';
 import {
   Select,
@@ -22,8 +19,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
-import WordCloud from 'react-d3-cloud';
+import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
+import AspectPerformanceChart from '../../components/reports/AspectPerformanceChart';
+import ProductActionMatrix from '../../components/reports/ProductActionMatrix';
+import DeepDiveDrillDown from '../../components/reports/DeepDiveDrillDown';
 
 export default function Reports() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -40,20 +39,15 @@ export default function Reports() {
   
   const [selectedDatasetId, setSelectedDatasetId] = useState<string>(defaultDatasetId);
 
-  // Filters for drilldown
-  const [filterProduct, setFilterProduct] = useState('all');
-  const [filterPolarity, setFilterPolarity] = useState('all');
-  const [filterAspect, setFilterAspect] = useState('all');
-  const [filterKeyword, setFilterKeyword] = useState('');
+  // Filters for drilldown and other components
+  const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
+  const [filterAspect, setFilterAspect] = useState<string | null>(null);
 
   const handleDatasetChange = (val: string) => {
     setSelectedDatasetId(val);
     setSearchParams({ datasetId: val });
-    // Reset filters
-    setFilterProduct('all');
-    setFilterPolarity('all');
-    setFilterAspect('all');
-    setFilterKeyword('');
+    setSelectedProduct(null);
+    setFilterAspect(null);
   };
 
   const selectedDataset = completedDatasets.find((d: any) => d.id.toString() === selectedDatasetId);
@@ -64,20 +58,14 @@ export default function Reports() {
     enabled: !!selectedDatasetId,
   });
 
-  const { data: drilldownData, isLoading: loadingDrilldown } = useQuery({
-    queryKey: ['reports', 'drilldown', selectedDatasetId, filterProduct, filterPolarity, filterAspect, filterKeyword],
-    queryFn: () => reportsApi.getDrilldown(Number(selectedDatasetId), {
-      product: filterProduct,
-      polarity: filterPolarity,
-      aspect: filterAspect,
-      keyword: filterKeyword,
-    }),
-    enabled: !!selectedDatasetId,
-  });
-
-  const handleWordClick = (word: any) => {
-    setFilterKeyword(word.text);
-  };
+  const allProducts = useMemo(() => {
+    if (!overviewData?.actionMatrix) return [];
+    return [
+      ...overviewData.actionMatrix.star,
+      ...overviewData.actionMatrix.needsAttention,
+      ...overviewData.actionMatrix.mixed,
+    ];
+  }, [overviewData]);
 
   if (loadingDatasets) {
     return <div className="p-8 text-center text-slate-500">Loading reports...</div>;
@@ -170,9 +158,9 @@ export default function Reports() {
             </Card>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Doughnut Chart */}
-            <Card className="shadow-sm border-slate-200/50 h-[400px] flex flex-col">
+            <Card className="shadow-sm border-slate-200/50 h-[440px] flex flex-col lg:col-span-1">
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
                   <PieChartIcon className="h-4 w-4 text-blue-600" /> Sentiment Breakdown
@@ -192,7 +180,13 @@ export default function Reports() {
                         <Cell key={`cell-${index}`} fill={entry.fill} />
                       ))}
                     </Pie>
-                    <RechartsTooltip />
+                    <RechartsTooltip 
+                      formatter={(value: any, name: any) => {
+                        const total = overviewData.executiveOverview.sentimentBreakdown.reduce((sum: number, entry: any) => sum + (entry.value || 0), 0);
+                        const percent = total > 0 ? ((Number(value) / total) * 100).toFixed(1) : "0.0";
+                        return [`${value} (${percent}%)`, name];
+                      }}
+                    />
                     <Legend verticalAlign="bottom" height={36}/>
                   </PieChart>
                 </ResponsiveContainer>
@@ -200,199 +194,39 @@ export default function Reports() {
             </Card>
 
             {/* Stacked Bar Chart */}
-            <Card className="shadow-sm border-slate-200/50 h-[400px] flex flex-col">
+            <Card className="shadow-sm border-slate-200/50 h-[440px] flex flex-col lg:col-span-2">
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
                   <BarChart3 className="h-4 w-4 text-blue-600" /> Aspect Performance
                 </CardTitle>
               </CardHeader>
               <CardContent className="flex-1 min-h-0 relative">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={overviewData.aspectPerformance}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0"/>
-                    <XAxis dataKey="aspect" axisLine={false} tickLine={false} />
-                    <YAxis axisLine={false} tickLine={false} />
-                    <RechartsTooltip />
-                    <Legend />
-                    <Bar dataKey="Positive" stackId="a" fill="#10b981" radius={[0, 0, 4, 4]} />
-                    <Bar dataKey="Neutral" stackId="a" fill="#f59e0b" />
-                    <Bar dataKey="Negative" stackId="a" fill="#ef4444" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+                <AspectPerformanceChart 
+                  data={overviewData.aspectPerformance}
+                  selectedAspect={filterAspect}
+                  onAspectSelect={setFilterAspect}
+                />
               </CardContent>
             </Card>
           </div>
 
           {/* Product Action Matrix */}
-          <Card className="shadow-sm border-slate-200/50">
-            <CardHeader>
-              <CardTitle>Product Action Matrix</CardTitle>
-              <CardDescription>Products categorized based on their performance.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Product</TableHead>
-                    <TableHead className="text-right">Positive %</TableHead>
-                    <TableHead className="text-right">Negative %</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {overviewData.actionMatrix.star.map((p: any) => (
-                    <TableRow key={p.name}>
-                      <TableCell><Badge className="bg-emerald-500 hover:bg-emerald-600">Star Product</Badge></TableCell>
-                      <TableCell className="font-medium">{p.name}</TableCell>
-                      <TableCell className="text-right text-emerald-600">{p.positivePct}%</TableCell>
-                      <TableCell className="text-right">{p.negativePct}%</TableCell>
-                    </TableRow>
-                  ))}
-                  {overviewData.actionMatrix.needsAttention.map((p: any) => (
-                    <TableRow key={p.name}>
-                      <TableCell><Badge variant="destructive">Needs Attention</Badge></TableCell>
-                      <TableCell className="font-medium">{p.name}</TableCell>
-                      <TableCell className="text-right">{p.positivePct}%</TableCell>
-                      <TableCell className="text-right text-rose-600">{p.negativePct}%</TableCell>
-                    </TableRow>
-                  ))}
-                  {overviewData.actionMatrix.mixed.map((p: any) => (
-                    <TableRow key={p.name}>
-                      <TableCell><Badge variant="outline" className="text-slate-500 border-slate-300">Mixed Reviews</Badge></TableCell>
-                      <TableCell className="font-medium">{p.name}</TableCell>
-                      <TableCell className="text-right">{p.positivePct}%</TableCell>
-                      <TableCell className="text-right">{p.negativePct}%</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+          <ProductActionMatrix 
+            data={allProducts} 
+            selectedProduct={selectedProduct}
+            onProductSelect={setSelectedProduct}
+          />
 
           {/* Deep Dive Drill-Down */}
-          <div className="grid grid-cols-1 gap-6">
-            <Card className="shadow-sm border-slate-200/50">
-              <CardHeader>
-                <CardTitle>Deep Dive Drill-Down</CardTitle>
-                <CardDescription>Filter and explore granular triplet data (Aspect - Opinion - Polarity).</CardDescription>
-                <div className="flex flex-wrap gap-4 pt-4">
-                  <Select value={filterProduct} onValueChange={setFilterProduct}>
-                    <SelectTrigger className="w-[200px]">
-                      <SelectValue placeholder="All Products" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Products</SelectItem>
-                      {overviewData.products?.map((p: string) => (
-                        <SelectItem key={p} value={p}>{p}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-
-                  <Select value={filterPolarity} onValueChange={setFilterPolarity}>
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="All Sentiments" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Sentiments</SelectItem>
-                      <SelectItem value="Positive">Positive</SelectItem>
-                      <SelectItem value="Neutral">Neutral</SelectItem>
-                      <SelectItem value="Negative">Negative</SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  <Select value={filterAspect} onValueChange={setFilterAspect}>
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="All Aspects" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Aspects</SelectItem>
-                      {overviewData.aspects?.map((a: string) => (
-                        <SelectItem key={a} value={a}>{a}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-
-                  {filterKeyword && (
-                    <Badge variant="secondary" className="flex items-center gap-2 h-10 px-4 text-sm cursor-pointer" onClick={() => setFilterKeyword('')}>
-                      Keyword: {filterKeyword} ✕
-                    </Badge>
-                  )}
-                </div>
-              </CardHeader>
-              
-              <CardContent className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                
-                {/* Triplet Table */}
-                <div className="border border-slate-200 rounded-lg overflow-hidden h-[500px] overflow-y-auto">
-                  <Table>
-                    <TableHeader className="bg-slate-50 sticky top-0 z-10">
-                      <TableRow>
-                        <TableHead>Aspect</TableHead>
-                        <TableHead>Opinion</TableHead>
-                        <TableHead>Polarity</TableHead>
-                        <TableHead className="text-right">Freq</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {loadingDrilldown ? (
-                        <TableRow><TableCell colSpan={4} className="text-center py-10">Loading...</TableCell></TableRow>
-                      ) : drilldownData?.triplets?.length > 0 ? (
-                        drilldownData.triplets.map((t: any, i: number) => (
-                          <TableRow key={i}>
-                            <TableCell className="font-medium">{t.aspect}</TableCell>
-                            <TableCell>{t.opinion}</TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className={
-                                t.polarity === 'Positive' ? 'text-emerald-600 border-emerald-200 bg-emerald-50' : 
-                                t.polarity === 'Negative' ? 'text-rose-600 border-rose-200 bg-rose-50' : 
-                                'text-amber-600 border-amber-200 bg-amber-50'
-                              }>
-                                {t.polarity}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-right font-mono text-slate-500">{t.frequency}</TableCell>
-                          </TableRow>
-                        ))
-                      ) : (
-                        <TableRow><TableCell colSpan={4} className="text-center py-10 text-slate-500">No data matches the selected filters.</TableCell></TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-
-                {/* Word Cloud */}
-                <div className="border border-slate-200 rounded-lg p-4 bg-slate-50/50 flex flex-col items-center justify-center min-h-[400px]">
-                  <h3 className="text-sm font-semibold text-slate-500 w-full mb-4 flex items-center gap-2">
-                    <MessageSquareText size={16} /> Aspect-Opinion Word Cloud (Click to filter)
-                  </h3>
-                  {loadingDrilldown ? (
-                    <div className="text-slate-400">Loading Word Cloud...</div>
-                  ) : drilldownData?.wordCloud?.length > 0 ? (
-                    <div className="w-full h-full flex-1">
-                      <WordCloud
-                        data={drilldownData.wordCloud}
-                        font="Inter"
-                        fontWeight="bold"
-                        fontSize={(word) => Math.log2(word.value) * 10 + 16}
-                        spiral="rectangular"
-                        rotate={0}
-                        padding={4}
-                        onWordClick={(event, d) => handleWordClick(d)}
-                        fill={(d: any) => {
-                           if(d.sentiment === 'Positive') return '#10b981';
-                           if(d.sentiment === 'Negative') return '#ef4444';
-                           return '#f59e0b';
-                        }}
-                      />
-                    </div>
-                  ) : (
-                    <div className="text-slate-400">Not enough data for word cloud.</div>
-                  )}
-                </div>
-
-              </CardContent>
-            </Card>
-          </div>
+          <DeepDiveDrillDown 
+            datasetId={Number(selectedDatasetId)}
+            products={overviewData.products || []}
+            aspects={overviewData.aspects || []}
+            selectedProduct={selectedProduct}
+            onProductSelect={setSelectedProduct}
+            selectedAspect={filterAspect}
+            onAspectSelect={setFilterAspect}
+          />
         </>
       ) : (
         <div className="p-8 text-center text-slate-500 bg-white rounded-xl border border-slate-200/50 flex items-center justify-center gap-3">

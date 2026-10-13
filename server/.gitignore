@@ -1,0 +1,13 @@
+# Environment variables files
+.env
+.env.local
+.env.*.local
+
+# IDE and Editor files
+.idea/
+.DS_Store
+
+# Dependencies and build folders (Good to include generally)
+node_modules/
+dist/
+build/

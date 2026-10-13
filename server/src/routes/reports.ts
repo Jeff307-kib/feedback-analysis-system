@@ -162,28 +162,25 @@ router.get('/:datasetId/drilldown', authenticate, async (req: any, res: any) => 
 
     const { product, polarity, aspect, keyword } = req.query;
 
-    let whereClause = `r.dataset_id = ${datasetId}`;
-    const params: any[] = [];
+    const conditions = [sql`r.dataset_id = ${datasetId}`];
     
     if (product && product !== 'all') {
-      params.push(product);
-      whereClause += ` AND r.product_name = $${params.length}`;
+      conditions.push(sql`r.product_name = ${product}`);
     }
     if (polarity && polarity !== 'all') {
-      params.push(polarity);
-      whereClause += ` AND f.sentiment = $${params.length}`;
+      conditions.push(sql`f.sentiment = ${polarity}`);
     }
     if (aspect && aspect !== 'all') {
-      params.push(aspect);
-      whereClause += ` AND f.aspect = $${params.length}`;
+      conditions.push(sql`f.aspect = ${aspect}`);
     }
     if (keyword) {
-      params.push(`%${keyword}%`);
-      whereClause += ` AND f.opinion ILIKE $${params.length}`;
+      conditions.push(sql`f.opinion ILIKE ${'%' + keyword + '%'}`);
     }
 
+    const whereClause = sql.join(conditions, sql` AND `);
+
     // Triplet Table data
-    const query = `
+    const query = sql`
       SELECT f.aspect, f.opinion, f.sentiment, COUNT(*) as frequency
       FROM feedback_results f
       JOIN reviews r ON f.review_id = r.id
@@ -192,13 +189,15 @@ router.get('/:datasetId/drilldown', authenticate, async (req: any, res: any) => 
       ORDER BY frequency DESC
     `;
 
-    const result = await db.execute(sql.raw(query), params);
+    const result = await db.execute(query);
 
     // Prepare Word Cloud Data
     // Group by opinion text and sum frequency
     const wordMap = new Map<string, { text: string; value: number; sentiment: string }>();
     
-    const triplets = result.rows.map((r: any) => {
+    const rows = Array.isArray(result) ? result : (result as any).rows || [];
+    
+    const triplets = rows.map((r: any) => {
       const freq = Number(r.frequency);
       const text = String(r.opinion);
       const sentiment = String(r.sentiment);

@@ -39,11 +39,17 @@ export const plansApi = {
   create: (data: any) => apiFetch('/plans', { method: 'POST', body: JSON.stringify(data) }),
   update: (id: number, data: any) => apiFetch(`/plans/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id: number) => apiFetch(`/plans/${id}`, { method: 'DELETE' }),
+  deactivate: (id: number) => apiFetch(`/plans/${id}/deactivate`, { method: 'PATCH' }),
+  activate: (id: number) => apiFetch(`/plans/${id}/activate`, { method: 'PATCH' }),
 };
 
 export const subscriptionsApi = {
   getMe: () => apiFetch('/subscriptions/me'),
+  create: (planId: number) => apiFetch('/subscriptions/create', { method: 'POST', body: JSON.stringify({ planId }) }),
+  cancel: () => apiFetch('/subscriptions/cancel', { method: 'POST' }),
   purchase: (planId: number) => apiFetch('/subscriptions/purchase', { method: 'POST', body: JSON.stringify({ planId }) }),
+  getInvoices: () => apiFetch('/subscriptions/invoices'),
+  sync: () => apiFetch('/subscriptions/sync', { method: 'POST' }),
 };
 
 export const datasetsApi = {
@@ -65,4 +71,50 @@ export const reportsApi = {
     const searchParams = new URLSearchParams(params);
     return apiFetch(`/reports/${datasetId}/drilldown?${searchParams.toString()}`);
   }
+};
+
+export const profileApi = {
+  get: () => apiFetch('/profile'),
+  update: (data: any) => apiFetch('/profile', { method: 'PUT', body: JSON.stringify(data) }),
+  requestCode: () => apiFetch('/profile/password/request-code', { method: 'POST' }),
+  verifyCode: (code: string) => apiFetch('/profile/password/verify-code', { method: 'POST', body: JSON.stringify({ code }) }),
+  resetPassword: (data: any) => apiFetch('/profile/password/reset', { method: 'POST', body: JSON.stringify(data) }),
+  deleteAccount: (data: any) => apiFetch('/profile', { method: 'DELETE', body: JSON.stringify(data) }),
+};
+
+export const feedbacksApi = {
+  submit: (data: { subject: string; message: string }) => apiFetch('/feedbacks', { method: 'POST', body: JSON.stringify(data) }),
+  getMyFeedbacks: () => apiFetch('/feedbacks/my'),
+  getAll: (params?: Record<string, string>) => {
+    const searchParams = new URLSearchParams(params || {});
+    const query = searchParams.toString() ? `?${searchParams.toString()}` : '';
+    return apiFetch(`/feedbacks${query}`);
+  },
+  updateStatus: (id: number, status: 'pending' | 'sent' | 'replied') => apiFetch(`/feedbacks/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+  reply: (id: number, replyMessage: string) => apiFetch(`/feedbacks/${id}/reply`, { method: 'POST', body: JSON.stringify({ replyMessage }) }),
+  delete: (id: number) => apiFetch(`/feedbacks/${id}`, { method: 'DELETE' }),
+};
+
+export const faqsApi = {
+  getPublic: () => apiFetch('/faqs'),
+  getAllAdmin: () => apiFetch('/admin/faqs'),
+  getById: (id: number) => apiFetch(`/admin/faqs/${id}`),
+  create: (data: { question: string; answer: string; sortOrder?: number; isVisible?: boolean }) => 
+    apiFetch('/admin/faqs', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: number, data: { question?: string; answer?: string; sortOrder?: number; isVisible?: boolean }) => 
+    apiFetch(`/admin/faqs/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  toggleVisibility: (id: number, isVisible?: boolean) => 
+    apiFetch(`/admin/faqs/${id}/visibility`, { method: 'PATCH', body: JSON.stringify({ isVisible }) }),
+  delete: (id: number) => apiFetch(`/admin/faqs/${id}`, { method: 'DELETE' }),
+};
+
+export const adminUsersApi = {
+  getAll: (params?: Record<string, string>) => {
+    const searchParams = new URLSearchParams(params || {});
+    return apiFetch(`/admin/users?${searchParams.toString()}`);
+  },
+  getById: (id: number) => apiFetch(`/admin/users/${id}`),
+  update: (id: number, data: any) => apiFetch(`/admin/users/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  updateStatus: (id: number, status: string) => apiFetch(`/admin/users/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+  getFeedbacks: (id: number, page: number = 1, limit: number = 20) => apiFetch(`/admin/users/${id}/feedbacks?page=${page}&limit=${limit}`),
 };
