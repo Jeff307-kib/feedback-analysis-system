@@ -19,7 +19,7 @@ export default function AdminDashboard() {
       {/* Sidebar Navigation */}
       <aside className="w-full md:w-64 shrink-0">
         <div className="sticky top-24 space-y-1">
-          <h2 className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
+          <h2 className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
             Admin Menu
           </h2>
           
@@ -27,11 +27,11 @@ export default function AdminDashboard() {
             onClick={() => setActiveTab('plans')}
             className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors cursor-pointer ${
               activeTab === 'plans' 
-                ? 'bg-blue-50 text-blue-700' 
-                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                ? 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-blue-300' 
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
             }`}
           >
-            <Package className={`h-5 w-5 ${activeTab === 'plans' ? 'text-blue-600' : 'text-slate-400'}`} />
+            <Package className={`h-5 w-5 ${activeTab === 'plans' ? 'text-primary dark:text-blue-300' : 'text-muted-foreground'}`} />
             Manage Plans
           </button>
           
@@ -39,11 +39,11 @@ export default function AdminDashboard() {
             onClick={() => setActiveTab('feedbacks')}
             className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors cursor-pointer ${
               activeTab === 'feedbacks' 
-                ? 'bg-blue-50 text-blue-700' 
-                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                ? 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-blue-300' 
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
             }`}
           >
-            <MessageSquareText className={`h-5 w-5 ${activeTab === 'feedbacks' ? 'text-blue-600' : 'text-slate-400'}`} />
+            <MessageSquareText className={`h-5 w-5 ${activeTab === 'feedbacks' ? 'text-primary dark:text-blue-300' : 'text-muted-foreground'}`} />
             Manage User Feedbacks
           </button>
 
@@ -51,11 +51,11 @@ export default function AdminDashboard() {
             onClick={() => setActiveTab('users')}
             className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors cursor-pointer ${
               activeTab === 'users' 
-                ? 'bg-blue-50 text-blue-700' 
-                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                ? 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-blue-300' 
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
             }`}
           >
-            <Users className={`h-5 w-5 ${activeTab === 'users' ? 'text-blue-600' : 'text-slate-400'}`} />
+            <Users className={`h-5 w-5 ${activeTab === 'users' ? 'text-primary dark:text-blue-300' : 'text-muted-foreground'}`} />
             Manage Users
           </button>
 
@@ -63,18 +63,18 @@ export default function AdminDashboard() {
             onClick={() => setActiveTab('faqs')}
             className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors cursor-pointer ${
               activeTab === 'faqs' 
-                ? 'bg-blue-50 text-blue-700' 
-                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                ? 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-blue-300' 
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
             }`}
           >
-            <HelpCircle className={`h-5 w-5 ${activeTab === 'faqs' ? 'text-blue-600' : 'text-slate-400'}`} />
+            <HelpCircle className={`h-5 w-5 ${activeTab === 'faqs' ? 'text-primary dark:text-blue-300' : 'text-muted-foreground'}`} />
             Manage FAQs
           </button>
         </div>
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 min-w-0 bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+      <main className="flex-1 min-w-0 bg-card text-card-foreground p-6 rounded-xl shadow-xs border border-border">
         {activeTab === 'plans' && <AdminPlans />}
         {activeTab === 'feedbacks' && (
           <AdminFeedbacks

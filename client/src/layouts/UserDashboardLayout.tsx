@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
 import { NotificationSystem } from '../components/NotificationSystem';
+import { ThemeToggle } from '../components/ThemeToggle';
 import { 
   LogOut, 
   LineChart, 
@@ -33,13 +34,13 @@ export function UserDashboardLayout() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="min-h-screen bg-background text-foreground flex transition-colors duration-200">
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col fixed inset-y-0 left-0 z-50">
-        <div className="h-16 flex items-center px-6 border-b border-slate-100">
-          <div className="flex items-center gap-2 text-blue-600">
+      <aside className="w-64 bg-card border-r border-border text-card-foreground flex flex-col fixed inset-y-0 left-0 z-50">
+        <div className="h-16 flex items-center px-6 border-b border-border">
+          <div className="flex items-center gap-2 text-primary">
             <LineChart size={24} />
-            <span className="font-bold text-lg tracking-tight text-slate-900">
+            <span className="font-bold text-lg tracking-tight text-foreground">
               InsightRetail
             </span>
           </div>
@@ -54,8 +55,8 @@ export function UserDashboardLayout() {
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-sm font-medium ${
                   isActive
-                    ? 'bg-blue-50 text-blue-700'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                    ? 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-blue-300 font-semibold'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                 }`
               }
             >
@@ -65,10 +66,10 @@ export function UserDashboardLayout() {
           ))}
         </nav>
 
-        <div className="p-4 border-t border-slate-100">
+        <div className="p-4 border-t border-border">
           <Button
             variant="ghost"
-            className="w-full justify-start text-slate-600 hover:text-rose-600 hover:bg-rose-50"
+            className="w-full justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
             onClick={handleLogout}
           >
             <LogOut size={18} className="mr-3" />
@@ -78,19 +79,20 @@ export function UserDashboardLayout() {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col ml-64 min-h-screen">
+      <div className="flex-1 flex flex-col ml-64 min-h-screen bg-background">
         {/* Top Header */}
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-40">
-          <h2 className="text-lg font-semibold text-slate-800">
+        <header className="h-16 bg-card/90 backdrop-blur supports-[backdrop-filter]:bg-card/75 border-b border-border flex items-center justify-between px-8 sticky top-0 z-40">
+          <h2 className="text-lg font-semibold text-foreground">
             Retail Manager
           </h2>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
             <NotificationSystem />
             
             <div className="flex flex-col items-end">
-              <span className="text-sm font-medium leading-none text-slate-900">{user?.username}</span>
-              <span className="text-xs text-slate-500 mt-1 capitalize">{user?.role?.replace('_', ' ').toLowerCase()}</span>
+              <span className="text-sm font-medium leading-none text-foreground">{user?.username}</span>
+              <span className="text-xs text-muted-foreground mt-1 capitalize">{user?.role?.replace('_', ' ').toLowerCase()}</span>
             </div>
           </div>
         </header>

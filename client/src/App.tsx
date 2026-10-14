@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ThemeProvider } from 'next-themes';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -29,43 +30,45 @@ function RootRedirect() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <BrowserRouter>
-          <Routes>
-            {/* Public Auth Routes - Restricted from Authenticated Users */}
-            <Route element={<PublicRoute />}>
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-            </Route>
-
-            {/* Protected Routes - Retail Manager */}
-            <Route element={<ProtectedRoute allowedRoles={['RETAIL_MANAGER']} />}>
-              <Route element={<UserDashboardLayout />}>
-                <Route path="/dashboard" element={<Overview />} />
-                <Route path="/dashboard/datasets" element={<Datasets />} />
-                <Route path="/dashboard/reports" element={<Reports />} />
-                <Route path="/dashboard/subscriptions" element={<Subscriptions />} />
-                <Route path="/dashboard/settings" element={<Settings />} />
-                <Route path="/dashboard/help" element={<HelpSupport />} />
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <BrowserRouter>
+            <Routes>
+              {/* Public Auth Routes - Restricted from Authenticated Users */}
+              <Route element={<PublicRoute />}>
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
               </Route>
-            </Route>
 
-            {/* Protected Routes - Admin */}
-            <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
-              <Route element={<DashboardLayout />}>
-                <Route path="/admin" element={<AdminDashboard />} />
+              {/* Protected Routes - Retail Manager */}
+              <Route element={<ProtectedRoute allowedRoles={['RETAIL_MANAGER']} />}>
+                <Route element={<UserDashboardLayout />}>
+                  <Route path="/dashboard" element={<Overview />} />
+                  <Route path="/dashboard/datasets" element={<Datasets />} />
+                  <Route path="/dashboard/reports" element={<Reports />} />
+                  <Route path="/dashboard/subscriptions" element={<Subscriptions />} />
+                  <Route path="/dashboard/settings" element={<Settings />} />
+                  <Route path="/dashboard/help" element={<HelpSupport />} />
+                </Route>
               </Route>
-            </Route>
 
-            {/* Default Route */}
-            <Route path="/" element={<RootRedirect />} />
-            <Route path="*" element={<RootRedirect />} />
-          </Routes>
-        </BrowserRouter>
-        <Toaster richColors position="top-right" />
-      </AuthProvider>
-    </QueryClientProvider>
+              {/* Protected Routes - Admin */}
+              <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
+                <Route element={<DashboardLayout />}>
+                  <Route path="/admin" element={<AdminDashboard />} />
+                </Route>
+              </Route>
+
+              {/* Default Route */}
+              <Route path="/" element={<RootRedirect />} />
+              <Route path="*" element={<RootRedirect />} />
+            </Routes>
+          </BrowserRouter>
+          <Toaster richColors position="top-right" />
+        </AuthProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }
 
