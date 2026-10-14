@@ -1,16 +1,21 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
+import { db } from '../database/index.js';
+import { users } from '../database/schema.js';
+import { eq } from 'drizzle-orm';
+
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_for_dev';
 
 export interface AuthRequest extends Request {
   user?: {
     userId: number;
     role: string;
+    status?: string;
   };
 }
 
-export const authenticate = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const authenticate = async (req: AuthRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -21,7 +26,35 @@ export const authenticate = (req: AuthRequest, res: Response, next: NextFunction
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as { userId: number, role: string };
-    req.user = decoded;
+
+    const [userRecord] = await db
+      .select({ id: users.id, role: users.role, status: users.status })
+      .from(users)
+      .where(eq(users.id, decoded.userId));
+
+    if (!userRecord) {
+      return res.status(401).json({ error: 'User account not found', code: 'ACCOUNT_NOT_FOUND' });
+    }
+
+    if (userRecord.status === 'suspended') {
+      return res.status(403).json({ 
+        error: 'Your account has been suspended. Please contact support.', 
+        code: 'ACCOUNT_SUSPENDED' 
+      });
+    }
+
+    if (userRecord.status === 'deleted') {
+      return res.status(403).json({ 
+        error: 'Your account has been deactivated.', 
+        code: 'ACCOUNT_DELETED' 
+      });
+    }
+
+    req.user = {
+      userId: userRecord.id,
+      role: userRecord.role,
+      status: userRecord.status,
+    };
     next();
   } catch (error) {
     return res.status(401).json({ error: 'Unauthorized: Invalid token' });

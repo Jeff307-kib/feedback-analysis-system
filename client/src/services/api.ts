@@ -19,10 +19,26 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
 
   if (!response.ok) {
     let errorMessage = 'An error occurred';
+    let errorCode = '';
     try {
       const errorData = await response.json();
       errorMessage = errorData.error || errorMessage;
+      errorCode = errorData.code || '';
     } catch (e) {}
+
+    if (
+      response.status === 401 ||
+      (response.status === 403 && (errorCode === 'ACCOUNT_SUSPENDED' || errorCode === 'ACCOUNT_DELETED'))
+    ) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.dispatchEvent(
+        new CustomEvent('auth:unauthorized', {
+          detail: { message: errorMessage, code: errorCode },
+        })
+      );
+    }
+
     throw new Error(errorMessage);
   }
 
@@ -115,6 +131,6 @@ export const adminUsersApi = {
   },
   getById: (id: number) => apiFetch(`/admin/users/${id}`),
   update: (id: number, data: any) => apiFetch(`/admin/users/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-  updateStatus: (id: number, status: string) => apiFetch(`/admin/users/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+  updateStatus: (id: number, status: string, reason?: string) => apiFetch(`/admin/users/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status, reason }) }),
   getFeedbacks: (id: number, page: number = 1, limit: number = 20) => apiFetch(`/admin/users/${id}/feedbacks?page=${page}&limit=${limit}`),
 };

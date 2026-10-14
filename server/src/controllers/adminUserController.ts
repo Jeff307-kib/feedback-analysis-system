@@ -3,25 +3,25 @@ import { db } from '../database/index.js';
 import { users, feedbacks, datasets, activeSubscriptions, plans } from '../database/schema.js';
 import { eq, ne, or, ilike, and, desc, count, isNull } from 'drizzle-orm';
 import { AuthRequest } from '../middlewares/authMiddleware.js';
+import { sendSuspensionEmail, sendReactivationEmail } from '../services/emailService.js';
 
 export const getAllUsers = async (req: AuthRequest, res: Response) => {
   try {
-    const { search, status, role, page = '1', limit = '20' } = req.query;
+    const { search, status, page = '1', limit = '20' } = req.query;
     const pageNum = parseInt(page as string);
     const limitNum = parseInt(limit as string);
     const offset = (pageNum - 1) * limitNum;
 
     let conditions = [];
 
+    // Only include users with RETAIL_MANAGER role (exclude ADMINs)
+    conditions.push(eq(users.role, 'RETAIL_MANAGER'));
+
     if (status && status !== 'all') {
       conditions.push(eq(users.status, status as any));
     } else {
       // By default, exclude soft-deleted users (only visible when filter = deleted)
       conditions.push(ne(users.status, 'deleted'));
-    }
-
-    if (role && role !== 'all') {
-      conditions.push(eq(users.role, role as any));
     }
 
     if (search) {
@@ -43,6 +43,7 @@ export const getAllUsers = async (req: AuthRequest, res: Response) => {
       id: users.id,
       username: users.username,
       email: users.email,
+      companyName: users.companyName,
       role: users.role,
       status: users.status,
       createdAt: users.createdAt
@@ -73,6 +74,7 @@ export const getUserById = async (req: AuthRequest, res: Response) => {
       email: users.email,
       role: users.role,
       status: users.status,
+      suspensionReason: users.suspensionReason,
       companyName: users.companyName,
       companyEmail: users.companyEmail,
       createdAt: users.createdAt
@@ -154,7 +156,7 @@ export const updateUser = async (req: AuthRequest, res: Response) => {
 export const updateUserStatus = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, reason } = req.body;
 
     if (!['active', 'suspended', 'deleted'].includes(status)) {
       return res.status(400).json({ error: 'Invalid status. Allowed: active, suspended, deleted' });
@@ -164,8 +166,15 @@ export const updateUserStatus = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'You cannot change your own status' });
     }
 
+    const updatePayload: any = { status };
+    if (status === 'suspended') {
+      updatePayload.suspensionReason = reason?.trim() || 'Account suspended by administrator';
+    } else if (status === 'active') {
+      updatePayload.suspensionReason = null;
+    }
+
     const result = await db.update(users)
-      .set({ status: status as any })
+      .set(updatePayload)
       .where(eq(users.id, parseInt(id)))
       .returning({
         id: users.id,
@@ -173,6 +182,7 @@ export const updateUserStatus = async (req: AuthRequest, res: Response) => {
         email: users.email,
         role: users.role,
         status: users.status,
+        suspensionReason: users.suspensionReason,
         createdAt: users.createdAt
       });
 
@@ -180,7 +190,23 @@ export const updateUserStatus = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    res.json({ message: `User status updated to ${status}`, data: result[0] });
+    const updatedUser = result[0];
+
+    // Send email notice to the user based on status update
+    if (status === 'suspended') {
+      await sendSuspensionEmail(
+        updatedUser.email,
+        updatedUser.username,
+        updatePayload.suspensionReason
+      );
+    } else if (status === 'active') {
+      await sendReactivationEmail(
+        updatedUser.email,
+        updatedUser.username
+      );
+    }
+
+    res.json({ message: `User status updated to ${status}`, data: updatedUser });
   } catch (error) {
     console.error('Error updating user status:', error);
     res.status(500).json({ error: 'Failed to update user status' });

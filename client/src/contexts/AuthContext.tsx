@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { toast } from 'sonner';
 
 type User = {
   id: number;
@@ -45,6 +46,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('token');
     localStorage.removeItem('user');
   };
+
+  useEffect(() => {
+    const handleUnauthorized = (event: any) => {
+      logout();
+      if (event.detail?.message) {
+        toast.error(event.detail.message, {
+          duration: 6000,
+        });
+      }
+    };
+
+    window.addEventListener('auth:unauthorized', handleUnauthorized as EventListener);
+    return () => {
+      window.removeEventListener('auth:unauthorized', handleUnauthorized as EventListener);
+    };
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: !!token }}>

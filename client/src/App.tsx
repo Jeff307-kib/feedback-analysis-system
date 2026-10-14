@@ -1,9 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ProtectedRoute from './components/ProtectedRoute';
+import PublicRoute from './components/PublicRoute';
 import { DashboardLayout } from './layouts/DashboardLayout';
 import { UserDashboardLayout } from './layouts/UserDashboardLayout';
 import { Toaster } from '@/components/ui/sonner';
@@ -18,15 +19,25 @@ import Settings from './pages/user/Settings';
 import HelpSupport from './pages/user/HelpSupport';
 import AdminDashboard from './pages/AdminDashboard';
 
+function RootRedirect() {
+  const { isAuthenticated, user } = useAuth();
+  if (isAuthenticated) {
+    return user?.role === 'ADMIN' ? <Navigate to="/admin" replace /> : <Navigate to="/dashboard" replace />;
+  }
+  return <Navigate to="/login" replace />;
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <BrowserRouter>
           <Routes>
-            {/* Public Routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+            {/* Public Auth Routes - Restricted from Authenticated Users */}
+            <Route element={<PublicRoute />}>
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+            </Route>
 
             {/* Protected Routes - Retail Manager */}
             <Route element={<ProtectedRoute allowedRoles={['RETAIL_MANAGER']} />}>
@@ -48,7 +59,8 @@ function App() {
             </Route>
 
             {/* Default Route */}
-            <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="/" element={<RootRedirect />} />
+            <Route path="*" element={<RootRedirect />} />
           </Routes>
         </BrowserRouter>
         <Toaster richColors position="top-right" />

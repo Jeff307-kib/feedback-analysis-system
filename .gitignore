@@ -1,13 +1,41 @@
 # Environment variables files
 .env
-.env.local
-.env.*.local
+.env.*
+*.env
 
 # IDE and Editor files
 .idea/
+.vscode/
 .DS_Store
+Thumbs.db
+*.swp
+*.swo
 
-# Dependencies and build folders (Good to include generally)
+# Dependencies and build folders
 node_modules/
 dist/
 build/
+.cache/
+
+# Python environment and bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+ENV/
+*.egg-info/
+.pytest_cache/
+
+# Model checkpoints and weights
+checkpoints/
+checkpoints.json
+*.bin
+*.pt
+*.pth
+*.onnx
+
+# Logs
+*.log
+logs/

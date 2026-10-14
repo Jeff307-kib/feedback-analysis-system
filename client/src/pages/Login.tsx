@@ -23,7 +23,7 @@ export default function Login() {
       const data = await authApi.login({ email, password });
       login(data.user, data.token);
       toast.success('Welcome back!');
-      navigate('/dashboard');
+      navigate(data.user.role === 'ADMIN' ? '/admin' : '/dashboard');
     } catch (err: any) {
       toast.error(err.message || 'Failed to login');
     } finally {

@@ -1,17 +1,79 @@
-# Environment variables files
+# Environment variables and secrets
 .env
-.env.local
-.env.*.local
+.env.*
+*.env
 
-# IDE and Editor files
-.idea/
-.DS_Store
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
 
-# Dependencies and build folders (Good to include generally)
-node_modules/
-dist/
+# C extensions
+*.so
+
+# Distribution / packaging
 build/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
-# Python environment and downloaded model checkpoints
+# PyInstaller / Py2app
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Virtual environments
 venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# PyABSA & HuggingFace Model checkpoints / weight files / cache
 checkpoints/
+checkpoints.json
+*.bin
+*.pt
+*.pth
+*.onnx
+.huggingface/
+huggingface/
+
+# IDE and OS files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/

@@ -15,6 +15,7 @@ export const users = pgTable('users', {
   companyEmail: varchar('company_email', { length: 255 }),
   role: roleEnum('role').default('RETAIL_MANAGER').notNull(),
   status: userStatusEnum('status').default('active').notNull(),
+  suspensionReason: text('suspension_reason'),
   hasUsedFreeTrial: boolean('has_used_free_trial').default(false).notNull(),
   stripeCustomerId: varchar('stripe_customer_id', { length: 255 }),
   createdAt: timestamp('created_at').defaultNow().notNull(),

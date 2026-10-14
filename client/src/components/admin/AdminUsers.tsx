@@ -7,11 +7,45 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { 
   Search, ChevronLeft, ChevronRight, HardDrive, Database, 
-  MessageSquare, User, AlertTriangle, Trash2, ExternalLink
+  MessageSquare, User, AlertTriangle, Trash2, ExternalLink, Mail
 } from 'lucide-react';
+
+const PREDEFINED_SUSPENSION_REASONS = [
+  {
+    id: 'terms_violation',
+    label: 'Violation of Terms of Service',
+    description: 'Violation of the platform Terms of Service and acceptable use policy.',
+  },
+  {
+    id: 'suspicious_activity',
+    label: 'Suspicious / Fraudulent Activity',
+    description: 'Suspicious or unauthorized account activity detected.',
+  },
+  {
+    id: 'billing_dispute',
+    label: 'Billing / Unpaid Balance',
+    description: 'Unresolved billing or payment failure for subscription plan.',
+  },
+  {
+    id: 'resource_abuse',
+    label: 'System Resource Abuse',
+    description: 'Excessive requests or abusive usage impacting platform performance.',
+  },
+  {
+    id: 'inappropriate_content',
+    label: 'Spam or Inappropriate Content',
+    description: 'Submission of spam, inappropriate, or prohibited feedback datasets.',
+  },
+  {
+    id: 'custom',
+    label: 'Other (Custom Reason)',
+    description: '',
+  },
+];
 
 interface AdminUsersProps {
   onNavigateToFeedback?: (feedbackId: number) => void;
@@ -21,13 +55,30 @@ export default function AdminUsers({ onNavigateToFeedback }: AdminUsersProps = {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [roleFilter, setRoleFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [deleteConfirmUser, setDeleteConfirmUser] = useState<any | null>(null);
   const [suspendConfirmUser, setSuspendConfirmUser] = useState<any | null>(null);
+  const [suspendReasonCategory, setSuspendReasonCategory] = useState<string>('terms_violation');
+  const [suspendCustomReason, setSuspendCustomReason] = useState<string>(PREDEFINED_SUSPENSION_REASONS[0].description);
 
   const ITEMS_PER_PAGE = 20;
+
+  const handleOpenSuspend = (user: any) => {
+    setSuspendConfirmUser(user);
+    setSuspendReasonCategory('terms_violation');
+    setSuspendCustomReason(PREDEFINED_SUSPENSION_REASONS[0].description);
+  };
+
+  const handleReasonCategoryChange = (val: string) => {
+    setSuspendReasonCategory(val);
+    const found = PREDEFINED_SUSPENSION_REASONS.find(r => r.id === val);
+    if (found && val !== 'custom') {
+      setSuspendCustomReason(found.description);
+    } else if (val === 'custom') {
+      setSuspendCustomReason('');
+    }
+  };
 
   // Debounce search
   const [debouncedSearch, setDebouncedSearch] = useState(search);
@@ -45,7 +96,6 @@ export default function AdminUsers({ onNavigateToFeedback }: AdminUsersProps = {
   };
   if (debouncedSearch) queryParams.search = debouncedSearch;
   if (statusFilter !== 'all') queryParams.status = statusFilter;
-  if (roleFilter !== 'all') queryParams.role = roleFilter;
 
   const { data: response, isLoading } = useQuery({
     queryKey: ['adminUsers', queryParams],
@@ -64,11 +114,18 @@ export default function AdminUsers({ onNavigateToFeedback }: AdminUsersProps = {
   const userDetail = detailResponse?.data;
 
   const statusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: number; status: string }) => adminUsersApi.updateStatus(id, status),
-    onSuccess: () => {
+    mutationFn: ({ id, status, reason }: { id: number; status: string; reason?: string }) => 
+      adminUsersApi.updateStatus(id, status, reason),
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
       queryClient.invalidateQueries({ queryKey: ['adminUserDetail', selectedUserId] });
-      toast.success('User status updated');
+      if (variables.status === 'suspended') {
+        toast.success(`User suspended and notice email sent to ${suspendConfirmUser?.email || 'user'}`);
+      } else if (variables.status === 'active') {
+        toast.success(`User reactivated and confirmation email sent to ${userDetail?.email || 'user'}`);
+      } else {
+        toast.success('User status updated');
+      }
       setDeleteConfirmUser(null);
       setSuspendConfirmUser(null);
     },
@@ -122,17 +179,6 @@ export default function AdminUsers({ onNavigateToFeedback }: AdminUsersProps = {
             </SelectContent>
           </Select>
 
-          <Select value={roleFilter} onValueChange={(val) => { setRoleFilter(val); setCurrentPage(1); }}>
-            <SelectTrigger className="w-[120px]">
-              <SelectValue placeholder="Role" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Roles</SelectItem>
-              <SelectItem value="RETAIL_MANAGER">User</SelectItem>
-              <SelectItem value="ADMIN">Admin</SelectItem>
-            </SelectContent>
-          </Select>
-
           <div className="relative w-full sm:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input 
@@ -153,7 +199,7 @@ export default function AdminUsers({ onNavigateToFeedback }: AdminUsersProps = {
                 <th className="px-6 py-4">No.</th>
                 <th className="px-6 py-4">Name</th>
                 <th className="px-6 py-4">Email</th>
-                <th className="px-6 py-4">Role</th>
+                <th className="px-6 py-4">Company</th>
                 <th className="px-6 py-4">Status</th>
                 <th className="px-6 py-4">Joined</th>
                 <th className="px-6 py-4 text-right">Actions</th>
@@ -170,7 +216,7 @@ export default function AdminUsers({ onNavigateToFeedback }: AdminUsersProps = {
                     <td className="px-6 py-4 font-medium text-slate-500">{(currentPage - 1) * ITEMS_PER_PAGE + index + 1}</td>
                     <td className="px-6 py-4 font-medium text-slate-900">{user.username}</td>
                     <td className="px-6 py-4 text-slate-600">{user.email}</td>
-                    <td className="px-6 py-4">{getRoleBadge(user.role)}</td>
+                    <td className="px-6 py-4 text-slate-600">{user.companyName || '—'}</td>
                     <td className="px-6 py-4">{getStatusBadge(user.status)}</td>
                     <td className="px-6 py-4 text-slate-500">{new Date(user.createdAt).toLocaleDateString()}</td>
                     <td className="px-6 py-4 text-right">
@@ -237,6 +283,20 @@ export default function AdminUsers({ onNavigateToFeedback }: AdminUsersProps = {
                   </div>
                 </div>
               </DialogHeader>
+
+              {/* Suspension Reason Banner */}
+              {userDetail.status === 'suspended' && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+                  <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <div className="font-semibold text-amber-900 text-sm">Account is Currently Suspended</div>
+                    <p className="text-amber-800 text-xs leading-relaxed">
+                      <span className="font-semibold text-amber-900">Reason: </span>
+                      {userDetail.suspensionReason || 'No specific reason recorded.'}
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* 1. Basic Info & Subscription / Storage */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -418,8 +478,8 @@ export default function AdminUsers({ onNavigateToFeedback }: AdminUsersProps = {
                   {userDetail.status === 'active' && (
                     <Button 
                       variant="outline"
-                      className="border-amber-200 text-amber-700 hover:bg-amber-50"
-                      onClick={() => setSuspendConfirmUser(userDetail)}
+                      className="border-amber-200 text-amber-700 hover:bg-amber-50 cursor-pointer"
+                      onClick={() => handleOpenSuspend(userDetail)}
                       disabled={statusMutation.isPending}
                     >
                       Suspend User
@@ -428,7 +488,7 @@ export default function AdminUsers({ onNavigateToFeedback }: AdminUsersProps = {
                   {userDetail.status === 'suspended' && (
                     <Button 
                       variant="outline"
-                      className="border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                      className="border-emerald-200 text-emerald-700 hover:bg-emerald-50 cursor-pointer"
                       onClick={() => statusMutation.mutate({ id: userDetail.id, status: 'active' })}
                       disabled={statusMutation.isPending}
                     >
@@ -438,7 +498,7 @@ export default function AdminUsers({ onNavigateToFeedback }: AdminUsersProps = {
                   {userDetail.status !== 'deleted' && (
                     <Button 
                       variant="outline"
-                      className="border-rose-200 text-rose-700 hover:bg-rose-50"
+                      className="border-rose-200 text-rose-700 hover:bg-rose-50 cursor-pointer"
                       onClick={() => setDeleteConfirmUser(userDetail)}
                       disabled={statusMutation.isPending}
                     >
@@ -453,7 +513,7 @@ export default function AdminUsers({ onNavigateToFeedback }: AdminUsersProps = {
         </DialogContent>
       </Dialog>
 
-      {/* Suspend Confirmation Dialog */}
+      {/* Suspend Confirmation Dialog with Reason Selection & Email Notice */}
       <Dialog open={!!suspendConfirmUser} onOpenChange={(open) => !open && setSuspendConfirmUser(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -463,26 +523,75 @@ export default function AdminUsers({ onNavigateToFeedback }: AdminUsersProps = {
               </div>
               <DialogTitle className="text-lg">Suspend User Account</DialogTitle>
             </div>
-            <DialogDescription className="text-slate-600 pt-2 text-sm leading-relaxed">
-              Are you sure you want to suspend <span className="font-semibold text-slate-900">{suspendConfirmUser?.username}</span>?
-              They will be temporarily prevented from logging in until reactivated.
+            <DialogDescription className="text-slate-600 pt-1 text-sm leading-relaxed">
+              Suspend <span className="font-semibold text-slate-900">{suspendConfirmUser?.username}</span> (<span className="text-slate-700">{suspendConfirmUser?.email}</span>). Select or provide a reason below.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex justify-end gap-3 mt-4 pt-3 border-t">
-            <Button variant="outline" onClick={() => setSuspendConfirmUser(null)}>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700">Reason Category</label>
+              <Select 
+                value={suspendReasonCategory} 
+                onValueChange={handleReasonCategoryChange}
+              >
+                <SelectTrigger className="w-full text-sm">
+                  <SelectValue placeholder="Select a reason" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PREDEFINED_SUSPENSION_REASONS.map((r) => (
+                    <SelectItem key={r.id} value={r.id}>
+                      {r.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700">
+                Explanation Notice <span className="text-slate-400 font-normal">(Included in user email)</span>
+              </label>
+              <Textarea
+                value={suspendCustomReason}
+                onChange={(e) => setSuspendCustomReason(e.target.value)}
+                placeholder="Enter detailed reason for suspension..."
+                rows={3}
+                className="text-sm resize-none"
+              />
+            </div>
+
+            <div className="bg-amber-50/80 border border-amber-200/70 rounded-lg p-3 text-xs text-amber-900 flex items-start gap-2.5">
+              <Mail className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+              <div className="leading-relaxed">
+                An official suspension notice email with this explanation will automatically be sent to <span className="font-semibold underline">{suspendConfirmUser?.email}</span>.
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 mt-2 pt-3 border-t">
+            <Button variant="outline" onClick={() => setSuspendConfirmUser(null)} disabled={statusMutation.isPending}>
               Cancel
             </Button>
             <Button 
-              className="bg-amber-600 hover:bg-amber-700 text-white"
+              className="bg-amber-600 hover:bg-amber-700 text-white gap-2 cursor-pointer"
               onClick={() => {
                 if (suspendConfirmUser) {
-                  statusMutation.mutate({ id: suspendConfirmUser.id, status: 'suspended' });
+                  const finalReason = suspendCustomReason.trim();
+                  if (!finalReason) {
+                    toast.error('Please provide a reason for suspension');
+                    return;
+                  }
+                  statusMutation.mutate({
+                    id: suspendConfirmUser.id,
+                    status: 'suspended',
+                    reason: finalReason
+                  });
                 }
               }}
-              disabled={statusMutation.isPending}
+              disabled={statusMutation.isPending || !suspendCustomReason.trim()}
             >
-              {statusMutation.isPending ? 'Suspending...' : 'Suspend User'}
+              {statusMutation.isPending ? 'Suspending & Notifying...' : 'Suspend & Notify User'}
             </Button>
           </div>
         </DialogContent>
