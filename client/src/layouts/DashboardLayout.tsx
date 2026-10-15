@@ -1,5 +1,5 @@
 import React from 'react';
-import { Outlet, useNavigate } from 'react-router';
+import { Outlet, useNavigate, Link } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
 import { NotificationSystem } from '../components/NotificationSystem';
 import { ThemeToggle } from '../components/ThemeToggle';
@@ -20,7 +20,7 @@ export function DashboardLayout() {
       {/* Top Navigation Bar */}
       <header className="sticky top-0 z-40 w-full border-b border-border bg-card/90 backdrop-blur supports-[backdrop-filter]:bg-card/75">
         <div className="container flex h-14 max-w-screen-2xl items-center justify-between px-4 sm:px-8">
-          <div className="flex items-center gap-2.5">
+          <Link to="/" className="flex items-center gap-2.5 hover:opacity-90 transition-opacity">
             <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary text-primary-foreground shadow-xs">
               <LineChart size={18} />
             </div>
@@ -30,7 +30,7 @@ export function DashboardLayout() {
             <span className="hidden sm:inline-block text-xs uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
               Admin
             </span>
-          </div>
+          </Link>
           
           <div className="flex items-center gap-3">
             <ThemeToggle />

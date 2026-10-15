@@ -19,14 +19,7 @@ import Subscriptions from './pages/user/Subscriptions';
 import Settings from './pages/user/Settings';
 import HelpSupport from './pages/user/HelpSupport';
 import AdminDashboard from './pages/AdminDashboard';
-
-function RootRedirect() {
-  const { isAuthenticated, user } = useAuth();
-  if (isAuthenticated) {
-    return user?.role === 'ADMIN' ? <Navigate to="/admin" replace /> : <Navigate to="/dashboard" replace />;
-  }
-  return <Navigate to="/login" replace />;
-}
+import LandingPage from './pages/LandingPage';
 
 function App() {
   return (
@@ -35,7 +28,10 @@ function App() {
         <AuthProvider>
           <BrowserRouter>
             <Routes>
-              {/* Public Auth Routes - Restricted from Authenticated Users */}
+              {/* Public Landing Page - Always accessible to both public and authenticated users */}
+              <Route path="/" element={<LandingPage />} />
+
+              {/* Public Auth Routes - Restricted from Authenticated Users (AuthRedirect guard) */}
               <Route element={<PublicRoute />}>
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
@@ -60,9 +56,8 @@ function App() {
                 </Route>
               </Route>
 
-              {/* Default Route */}
-              <Route path="/" element={<RootRedirect />} />
-              <Route path="*" element={<RootRedirect />} />
+              {/* Fallback unknown route redirects to landing page */}
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </BrowserRouter>
           <Toaster richColors position="top-right" />

@@ -38,12 +38,12 @@ export function UserDashboardLayout() {
       {/* Sidebar */}
       <aside className="w-64 bg-card border-r border-border text-card-foreground flex flex-col fixed inset-y-0 left-0 z-50">
         <div className="h-16 flex items-center px-6 border-b border-border">
-          <div className="flex items-center gap-2 text-primary">
+          <NavLink to="/" className="flex items-center gap-2 text-primary hover:opacity-90 transition-opacity">
             <LineChart size={24} />
             <span className="font-bold text-lg tracking-tight text-foreground">
               InsightRetail
             </span>
-          </div>
+          </NavLink>
         </div>
 
         <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1">

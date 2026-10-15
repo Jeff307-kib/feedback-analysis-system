@@ -2,14 +2,14 @@ import { Router } from 'express';
 import { db } from '../database/index.ts';
 import { plans, activeSubscriptions } from '../database/schema.ts';
 import { eq, and, count } from 'drizzle-orm';
-import { authenticate, requireAdmin } from '../middlewares/authMiddleware.ts';
+import { authenticate, optionalAuthenticate, requireAdmin } from '../middlewares/authMiddleware.ts';
 import { createStripeProduct, createStripePrice } from '../services/stripe.service.ts';
 
 const router = Router();
 
 // GET /api/plans
 // Public/Auth'd to see available active plans (Admins see all with subscriber count)
-router.get('/', authenticate, async (req: any, res) => {
+router.get('/', optionalAuthenticate, async (req: any, res) => {
   try {
     if (req.user?.role === 'ADMIN') {
       const allPlans = await db.select().from(plans).orderBy(plans.id);

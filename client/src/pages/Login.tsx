@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
 import { authApi } from '../services/api';
-import { LogIn } from 'lucide-react';
+import { LogIn, LineChart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,7 +32,15 @@ export default function Login() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-background px-4 py-8">
+      <Link to="/" className="flex items-center gap-2 mb-6 group">
+        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary text-primary-foreground shadow-xs group-hover:scale-105 transition-transform">
+          <LineChart size={18} />
+        </div>
+        <span className="font-extrabold text-xl tracking-tight text-foreground">
+          InsightRetail
+        </span>
+      </Link>
       <Card className="w-full max-w-md shadow-sm border-slate-200/50">
         <CardHeader className="text-center space-y-4">
           <div className="flex justify-center">
