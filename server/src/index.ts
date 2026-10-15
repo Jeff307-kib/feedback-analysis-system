@@ -12,6 +12,7 @@ import feedbacksRoutes from './routes/feedbacks.js';
 import adminUsersRoutes from './routes/adminUsers.js';
 import faqsRoutes from './routes/faqs.js';
 import adminFaqsRoutes from './routes/adminFaqs.js';
+import announcementsRoutes from './routes/announcements.js';
 
 dotenv.config();
 
@@ -37,6 +38,8 @@ app.use((req, res, next) => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/plans', plansRoutes);
+app.use('/api/admin/plans', plansRoutes);
+app.use('/api/announcements', announcementsRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/datasets', datasetsRouter);
 app.use('/api/reports', reportsRouter);

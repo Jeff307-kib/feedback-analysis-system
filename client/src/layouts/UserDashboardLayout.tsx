@@ -3,6 +3,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
 import { NotificationSystem } from '../components/NotificationSystem';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { AnnouncementModal } from '../components/AnnouncementModal';
 import { 
   LogOut, 
   LineChart, 
@@ -104,6 +105,9 @@ export function UserDashboardLayout() {
           </div>
         </main>
       </div>
+
+      {/* In-app Plan Announcements Modal */}
+      <AnnouncementModal />
     </div>
   );
 }

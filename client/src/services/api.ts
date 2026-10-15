@@ -53,10 +53,15 @@ export const authApi = {
 export const plansApi = {
   getAll: () => apiFetch('/plans'),
   create: (data: any) => apiFetch('/plans', { method: 'POST', body: JSON.stringify(data) }),
-  update: (id: number, data: any) => apiFetch(`/plans/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  update: (id: number, data: any) => apiFetch(`/admin/plans/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   delete: (id: number) => apiFetch(`/plans/${id}`, { method: 'DELETE' }),
   deactivate: (id: number) => apiFetch(`/plans/${id}/deactivate`, { method: 'PATCH' }),
   activate: (id: number) => apiFetch(`/plans/${id}/activate`, { method: 'PATCH' }),
+};
+
+export const announcementsApi = {
+  getUnseen: () => apiFetch('/announcements/unseen'),
+  markSeen: (id: number) => apiFetch(`/announcements/${id}/seen`, { method: 'POST' }),
 };
 
 export const subscriptionsApi = {

@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, timestamp, boolean, pgEnum, integer, numeric, text } from 'drizzle-orm/pg-core';
+import { pgTable, serial, varchar, timestamp, boolean, pgEnum, integer, numeric, text, primaryKey } from 'drizzle-orm/pg-core';
 
 export const roleEnum = pgEnum('role', ['ADMIN', 'RETAIL_MANAGER']);
 export const userStatusEnum = pgEnum('user_status', ['active', 'suspended', 'deleted']);
@@ -108,3 +108,22 @@ export const faqs = pgTable('faqs', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
+
+export const planAnnouncements = pgTable('plan_announcements', {
+  announcementId: serial('announcement_id').primaryKey(),
+  planId: integer('plan_id').references(() => plans.id, { onDelete: 'set null' }),
+  action: varchar('action', { length: 20 }).notNull(), // 'created' | 'edited' | 'activated' | 'deactivated' | 'deleted'
+  title: varchar('title', { length: 255 }).notNull(),
+  message: text('message').notNull(),
+  targetUserIds: integer('target_user_ids').array(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const userAnnouncementViews = pgTable('user_announcement_views', {
+  userId: integer('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  announcementId: integer('announcement_id').references(() => planAnnouncements.announcementId, { onDelete: 'cascade' }).notNull(),
+  seenAt: timestamp('seen_at').defaultNow().notNull(),
+}, (table) => [
+  primaryKey({ columns: [table.userId, table.announcementId] })
+]);
+

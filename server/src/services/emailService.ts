@@ -235,3 +235,73 @@ If you have questions or require assistance, please reach us at support@feedback
   }
 };
 
+export const sendPlanAnnouncementEmail = async (to: string, name: string, title: string, message: string) => {
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    console.log('\n--- EMAIL MOCK ---');
+    console.log(`To: ${to}`);
+    console.log(`Subject: ${title} - Feedback Analysis System`);
+    console.log(`Recipient: ${name}`);
+    console.log(`Body: ${message}`);
+    console.log('------------------\n');
+    return true;
+  }
+
+  const appUrl = process.env.APP_URL || 'http://localhost:5173';
+  const plansUrl = `${appUrl}/dashboard/subscriptions`;
+
+  const formattedHtmlMessage = message
+    .split('\n')
+    .map(line => line.trim())
+    .filter(Boolean)
+    .map(line => `<p style="color: #334155; font-size: 15px; line-height: 1.6; margin: 8px 0;">${line}</p>`)
+    .join('');
+
+  const htmlContent = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 28px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+      <div style="margin-bottom: 20px;">
+        <h2 style="color: #1e293b; margin: 0; font-size: 22px; font-weight: 700;">${title}</h2>
+      </div>
+      <p style="color: #334155; font-size: 15px; line-height: 1.6;">Hello ${name},</p>
+      
+      <div style="background-color: #f8fafc; border-left: 4px solid #2563eb; padding: 16px 20px; border-radius: 8px; margin: 20px 0;">
+        ${formattedHtmlMessage}
+      </div>
+
+      <div style="text-align: center; margin: 28px 0;">
+        <a href="${plansUrl}" style="background-color: #2563eb; color: #ffffff; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-size: 15px; font-weight: 600; display: inline-block;">View Subscription Plans</a>
+      </div>
+      
+      <div style="margin-top: 28px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+        <p style="color: #64748b; font-size: 13px; line-height: 1.6; margin: 0;">If you have any questions or require assistance, feel free to reply to this email or reach us at <a href="mailto:support@feedbacksystem.com" style="color: #2563eb; text-decoration: none; font-weight: 500;">support@feedbacksystem.com</a>.</p>
+      </div>
+    </div>
+  `;
+
+  const textContent = `
+${title}
+
+Hello ${name},
+
+${message}
+
+View plans here: ${plansUrl}
+
+If you have questions or require assistance, please reach us at support@feedbacksystem.com.
+  `;
+
+  try {
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM || '"Feedback Analysis System Support" <support@feedbacksystem.com>',
+      to,
+      subject: `${title} - Feedback Analysis System`,
+      text: textContent,
+      html: htmlContent,
+    });
+    return true;
+  } catch (error) {
+    console.error('Error sending announcement email via Nodemailer:', error);
+    return false;
+  }
+};
+
+

@@ -3,6 +3,7 @@ import { Outlet, useNavigate, Link } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
 import { NotificationSystem } from '../components/NotificationSystem';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { AnnouncementModal } from '../components/AnnouncementModal';
 import { LogOut, LineChart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -58,6 +59,9 @@ export function DashboardLayout() {
       <main className="flex-1 p-4 sm:p-8 container max-w-screen-2xl mx-auto">
         <Outlet />
       </main>
+
+      {/* In-app Plan Announcements Modal */}
+      <AnnouncementModal />
     </div>
   );
 }
