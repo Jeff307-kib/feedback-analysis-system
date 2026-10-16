@@ -73,6 +73,14 @@ router.post('/login', async (req, res) => {
       return res.status(403).json({ error: 'Account is suspended or deleted' });
     }
 
+    // Role check: Only Retail Managers may log in via /login
+    if (user.role === 'ADMIN') {
+      return res.status(403).json({
+        error: 'Administrators must sign in through the dedicated Admin Portal at /admin/login.',
+        code: 'ADMIN_LOGIN_REQUIRED',
+      });
+    }
+
     // Check and expire any inactive plan subscriptions past period end
     await checkInactivePlanExpirations();
 

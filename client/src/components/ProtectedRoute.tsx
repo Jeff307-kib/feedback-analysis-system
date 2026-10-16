@@ -10,7 +10,8 @@ export default function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
   const { isAuthenticated, user } = useAuth();
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    const isAdminRoute = allowedRoles && allowedRoles.length === 1 && allowedRoles.includes('ADMIN');
+    return <Navigate to={isAdminRoute ? '/admin/login' : '/login'} replace />;
   }
 
   if (allowedRoles && user && !allowedRoles.includes(user.role)) {

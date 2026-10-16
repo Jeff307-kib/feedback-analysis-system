@@ -15,17 +15,24 @@ export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
 
+  const [adminRedirectPrompt, setAdminRedirectPrompt] = useState(false);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setAdminRedirectPrompt(false);
 
     try {
       const data = await authApi.login({ email, password });
       login(data.user, data.token);
       toast.success('Welcome back!');
-      navigate(data.user.role === 'ADMIN' ? '/admin' : '/dashboard');
+      navigate('/dashboard');
     } catch (err: any) {
-      toast.error(err.message || 'Failed to login');
+      const msg = err.message || 'Failed to login';
+      toast.error(msg);
+      if (msg.includes('/admin/login') || msg.toLowerCase().includes('admin')) {
+        setAdminRedirectPrompt(true);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -44,16 +51,24 @@ export default function Login() {
       <Card className="w-full max-w-md shadow-sm border-slate-200/50">
         <CardHeader className="text-center space-y-4">
           <div className="flex justify-center">
-            <div className="p-3 bg-blue-50 text-blue-600 rounded-full">
+            <div className="p-3 bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400 rounded-full">
               <LogIn size={28} />
             </div>
           </div>
           <div className="space-y-1">
-            <CardTitle className="text-2xl font-bold tracking-tight">Welcome back</CardTitle>
-            <CardDescription>Sign in to your Retail Manager account</CardDescription>
+            <CardTitle className="text-2xl font-bold tracking-tight">Retail Manager Sign In</CardTitle>
+            <CardDescription>Sign in to your Retail Manager account to manage customer sentiment</CardDescription>
           </div>
         </CardHeader>
         <CardContent>
+          {adminRedirectPrompt && (
+            <div className="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 dark:bg-amber-950/50 dark:border-amber-800 dark:text-amber-200 text-xs flex items-center justify-between">
+              <span>Looking for the administrator portal?</span>
+              <Link to="/admin/login" className="font-semibold text-amber-900 dark:text-amber-100 underline hover:no-underline">
+                Go to Admin Login &rarr;
+              </Link>
+            </div>
+          )}
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="space-y-2">
               <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70" htmlFor="email">
@@ -63,7 +78,7 @@ export default function Login() {
                 id="email"
                 type="email"
                 required
-                placeholder="name@example.com"
+                placeholder="manager@company.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
@@ -85,13 +100,18 @@ export default function Login() {
             </Button>
           </form>
         </CardContent>
-        <CardFooter className="flex justify-center">
+        <CardFooter className="flex flex-col gap-3 justify-center text-center">
           <p className="text-sm text-muted-foreground">
             Don't have an account?{' '}
             <Link to="/register" className="font-medium text-primary hover:underline transition-all">
               Register here
             </Link>
           </p>
+          <div className="pt-2 border-t border-border/60 w-full">
+            <Link to="/admin/login" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+              System Administrator? Sign in at Admin Portal
+            </Link>
+          </div>
         </CardFooter>
       </Card>
     </div>

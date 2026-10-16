@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth.js';
+import adminAuthRoutes from './routes/adminAuth.js';
 import plansRoutes from './routes/plans.js';
 import subscriptionRoutes from './routes/subscriptions.js';
 import datasetsRouter from './routes/datasets.js';
@@ -37,6 +38,8 @@ app.use((req, res, next) => {
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/admin/auth', adminAuthRoutes);
+app.use('/api/auth/admin', adminAuthRoutes);
 app.use('/api/plans', plansRoutes);
 app.use('/api/admin/plans', plansRoutes);
 app.use('/api/announcements', announcementsRoutes);

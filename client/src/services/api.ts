@@ -20,8 +20,10 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
   if (!response.ok) {
     let errorMessage = 'An error occurred';
     let errorCode = '';
+    let errorDetails: any = {};
     try {
       const errorData = await response.json();
+      errorDetails = errorData;
       errorMessage = errorData.error || errorMessage;
       errorCode = errorData.code || '';
     } catch (e) {}
@@ -39,7 +41,11 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
       );
     }
 
-    throw new Error(errorMessage);
+    const error: any = new Error(errorMessage);
+    error.status = response.status;
+    error.code = errorCode;
+    error.details = errorDetails;
+    throw error;
   }
 
   return response.json();
@@ -47,6 +53,9 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
 
 export const authApi = {
   login: (data: any) => apiFetch('/auth/login', { method: 'POST', body: JSON.stringify(data) }),
+  adminLogin: (data: any) => apiFetch('/admin/auth/login', { method: 'POST', body: JSON.stringify(data) }),
+  getAdminLockoutStatus: (email?: string) =>
+    apiFetch(`/admin/auth/lockout-status${email ? `?email=${encodeURIComponent(email)}` : ''}`),
   register: (data: any) => apiFetch('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
 };
 

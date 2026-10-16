@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from 'next-themes';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Login from './pages/Login';
+import AdminLoginPage from './pages/AdminLoginPage';
 import Register from './pages/Register';
 import ProtectedRoute from './components/ProtectedRoute';
 import PublicRoute from './components/PublicRoute';
@@ -34,6 +35,7 @@ function App() {
               {/* Public Auth Routes - Restricted from Authenticated Users (AuthRedirect guard) */}
               <Route element={<PublicRoute />}>
                 <Route path="/login" element={<Login />} />
+                <Route path="/admin/login" element={<AdminLoginPage />} />
                 <Route path="/register" element={<Register />} />
               </Route>
 

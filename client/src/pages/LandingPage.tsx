@@ -201,8 +201,9 @@ export default function LandingPage() {
                   variant="ghost"
                   size="icon"
                   onClick={() => {
+                    const isAdm = user?.role === 'ADMIN';
                     logout();
-                    navigate('/login');
+                    navigate(isAdm ? '/admin/login' : '/login');
                   }}
                   title="Log out"
                   className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
@@ -297,9 +298,10 @@ export default function LandingPage() {
                   <Button
                     variant="outline"
                     onClick={() => {
+                      const isAdm = user?.role === 'ADMIN';
                       setMobileMenuOpen(false);
                       logout();
-                      navigate('/login');
+                      navigate(isAdm ? '/admin/login' : '/login');
                     }}
                     className="w-full text-destructive justify-center"
                   >
@@ -1226,8 +1228,9 @@ export default function LandingPage() {
                     <li>
                       <button
                         onClick={() => {
+                          const isAdm = user?.role === 'ADMIN';
                           logout();
-                          navigate('/login');
+                          navigate(isAdm ? '/admin/login' : '/login');
                         }}
                         className="hover:text-destructive transition-colors text-left"
                       >
@@ -1239,12 +1242,18 @@ export default function LandingPage() {
                   <>
                     <li>
                       <Link to="/login" className="hover:text-foreground transition-colors">
-                        Sign In
+                        Sign In (Retail Manager)
                       </Link>
                     </li>
                     <li>
                       <Link to="/register" className="hover:text-foreground transition-colors">
                         Create Account
+                      </Link>
+                    </li>
+                    <li className="pt-1.5 border-t border-border/40">
+                      <Link to="/admin/login" className="text-xs text-muted-foreground/80 hover:text-foreground transition-colors flex items-center gap-1.5">
+                        <ShieldCheck size={13} className="text-muted-foreground" />
+                        Admin Portal
                       </Link>
                     </li>
                   </>
